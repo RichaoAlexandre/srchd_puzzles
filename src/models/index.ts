@@ -71,6 +71,13 @@ export interface Tool {
 
 export type ToolChoice = "auto" | "any" | "none";
 
+export interface Usage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_creation_tokens?: number;
+  cache_read_tokens?: number;
+}
+
 export abstract class BaseModel {
   protected config: ModelConfig;
 
@@ -91,4 +98,7 @@ export abstract class BaseModel {
     toolChoice: ToolChoice,
     tools: Tool[],
   ): Promise<Result<number, SrchdError>>;
+
+  // Optional method that models can override to provide usage information
+  abstract getUsage(): Usage | undefined;
 }

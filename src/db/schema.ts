@@ -238,3 +238,26 @@ export const solutions = sqliteTable(
     ),
   ],
 );
+
+export const usages = sqliteTable("usages", {
+  id: integer("id").primaryKey(),
+  created: integer("created", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  experiment: integer("experiment")
+    .notNull()
+    .references(() => experiments.id),
+  message: integer("message")
+    .notNull()
+    .references(() => messages.id),
+
+  agent: integer("agent")
+    .notNull()
+    .references(() => agents.id),
+
+  input_tokens: integer("input_tokens").notNull().default(1),
+  output_tokens: integer("output_tokens").notNull().default(0),
+
+  cache_creation_tokens: integer("cache_creation_tokens").notNull().default(0),
+  cache_read_tokens: integer("cache_read_tokens").notNull().default(0),
+});

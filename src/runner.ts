@@ -507,6 +507,8 @@ ${this.agent.toJSON().system}`;
 
     let last = this.messages[this.messages.length - 1];
 
+    // const usage = this.model.getUsage();
+
     const agentMessage = await MessageResource.create(
       this.experiment,
       this.agent,

@@ -6,6 +6,7 @@ import {
   Tool,
   ToolChoice,
   DEFAULT_MAX_TOKENS,
+  Usage,
 } from "./index";
 import Anthropic from "@anthropic-ai/sdk";
 import { normalizeError, SrchdError } from "../lib/error";
@@ -21,21 +22,26 @@ export type AnthropicModels =
   | "claude-opus-4-1-20250805";
 export function isAnthropicModel(model: string): model is AnthropicModels {
   return ["claude-sonnet-4-20250514", "claude-opus-4-1-20250805"].includes(
-    model
+    model,
   );
 }
 
 export class AnthropicModel extends BaseModel {
   private client: Anthropic;
   private model: AnthropicModels;
+  private lastUsage?: Usage;
 
   constructor(
     config: ModelConfig,
-    model: AnthropicModels = "claude-sonnet-4-20250514"
+    model: AnthropicModels = "claude-sonnet-4-20250514",
   ) {
     super(config);
     this.client = new Anthropic();
     this.model = model;
+  }
+
+  getUsage(): Usage | undefined {
+    return this.lastUsage;
   }
 
   messages(messages: Message[]) {
@@ -123,10 +129,9 @@ export class AnthropicModel extends BaseModel {
             default:
               assertNever(content);
           }
-        })
+        }),
       ),
     }));
-
     for (var i = anthropicMessages.length - 1; i >= 0; i--) {
       if (anthropicMessages[i].role === "user") {
         let found = false;
@@ -144,6 +149,9 @@ export class AnthropicModel extends BaseModel {
       }
     }
 
+    // Note: We don't cache user messages because they change frequently
+    // (current time, pending reviews, etc.). Only the system prompt is cached.
+
     return anthropicMessages;
   }
 
@@ -151,7 +159,7 @@ export class AnthropicModel extends BaseModel {
     messages: Message[],
     prompt: string,
     toolChoice: ToolChoice,
-    tools: Tool[]
+    tools: Tool[],
   ): Promise<Result<Message, SrchdError>> {
     try {
       const message = await this.client.messages.create({
@@ -213,7 +221,14 @@ export class AnthropicModel extends BaseModel {
         },
       });
 
-      // console.log(message.usage);
+      // Capture usage information from the API response
+      this.lastUsage = {
+        input_tokens: message.usage.input_tokens,
+        output_tokens: message.usage.output_tokens,
+        cache_creation_tokens:
+          message.usage.cache_creation_input_tokens ?? undefined,
+        cache_read_tokens: message.usage.cache_read_input_tokens ?? undefined,
+      };
 
       return new Ok({
         role: message.role === "assistant" ? "agent" : "user",
@@ -265,7 +280,7 @@ export class AnthropicModel extends BaseModel {
               default:
                 assertNever(c);
             }
-          })
+          }),
         ),
       });
     } catch (error) {
@@ -273,8 +288,8 @@ export class AnthropicModel extends BaseModel {
         new SrchdError(
           "model_error",
           "Failed to run model",
-          normalizeError(error)
-        )
+          normalizeError(error),
+        ),
       );
     }
   }
@@ -283,7 +298,7 @@ export class AnthropicModel extends BaseModel {
     messages: Message[],
     prompt: string,
     toolChoice: ToolChoice,
-    tools: Tool[]
+    tools: Tool[],
   ): Promise<Result<number, SrchdError>> {
     try {
       const response = await this.client.messages.countTokens({
@@ -326,8 +341,8 @@ export class AnthropicModel extends BaseModel {
         new SrchdError(
           "model_error",
           "Failed to count tokens",
-          normalizeError(error)
-        )
+          normalizeError(error),
+        ),
       );
     }
   }

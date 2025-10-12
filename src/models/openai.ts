@@ -1,5 +1,12 @@
 import { ResponseInputItem } from "openai/resources/responses/responses";
-import { BaseModel, ModelConfig, Message, Tool, ToolChoice } from "./index";
+import {
+  BaseModel,
+  ModelConfig,
+  Message,
+  Tool,
+  ToolChoice,
+  Usage,
+} from "./index";
 
 import OpenAI from "openai";
 import { normalizeError, SrchdError } from "../lib/error";
@@ -17,6 +24,11 @@ export function isOpenAIModel(model: string): model is OpenAIModels {
 export class OpenAIModel extends BaseModel {
   private client: OpenAI;
   private model: OpenAIModels;
+
+  getUsage(): Usage | undefined {
+    //TODO: implement this
+    return undefined;
+  }
 
   messages(messages: Message[]) {
     const inputItems: ResponseInputItem[] = messages
@@ -44,7 +56,7 @@ export class OpenAIModel extends BaseModel {
                             ? {
                                 error: content.content,
                               }
-                            : content
+                            : content,
                         ),
                       },
                     ];
@@ -148,7 +160,7 @@ export class OpenAIModel extends BaseModel {
     messages: Message[],
     prompt: string,
     toolChoice: ToolChoice,
-    tools: Tool[]
+    tools: Tool[],
   ): Promise<Result<Message, SrchdError>> {
     try {
       const input = this.messages(messages);
@@ -282,8 +294,8 @@ export class OpenAIModel extends BaseModel {
         new SrchdError(
           "model_error",
           "Failed to run model",
-          normalizeError(error)
-        )
+          normalizeError(error),
+        ),
       );
     }
   }
@@ -292,7 +304,7 @@ export class OpenAIModel extends BaseModel {
     messages: Message[],
     prompt: string,
     toolChoice: ToolChoice,
-    tools: Tool[]
+    tools: Tool[],
   ): Promise<Result<number, SrchdError>> {
     const tokenCount =
       ENCODING.encode(prompt).length +
