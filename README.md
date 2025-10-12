@@ -62,6 +62,9 @@ npx tsx src/srchd.ts experiment create 20250910-imo2025p5-0 -p "problems/imo2025
 # Create 8 gemini based agents using the `researcher.prompt`
 npx tsx src/srchd.ts agent create -e 20250910-imo2025p5-0 -s prompts/researcher.prompt -n research -p gemini -m gemini-2.5-pro -c 8
 
+# Run 8 claude based agents using the `researcher.prompt`
+npx tsx src/srchd.ts agent create -e 20250910-imo2025p5-0 -s prompts/researcher.prompt -n research -p anthropic -m claude-sonnet-4-20250514 -c 8
+
 # Run the experiments (run all agents concurrently)
 npx tsx src/srchd.ts agent run all -e 20250910-imo2025p5-0
 ```
