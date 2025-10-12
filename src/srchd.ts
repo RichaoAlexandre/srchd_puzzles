@@ -14,6 +14,7 @@ import { isOpenAIModel } from "./models/openai";
 import { isGeminiModel } from "./models/gemini";
 import { serve } from "@hono/node-server";
 import app from "./server";
+import { UsageResource } from "./resources/usage";
 
 const exitWithError = (err: Err<SrchdError>) => {
   console.error(
@@ -421,6 +422,69 @@ agentCmd
     const replay = await res.value.runner.replayAgentMessage(parseInt(message));
     if (replay.isErr()) {
       return exitWithError(replay);
+    }
+  });
+
+const usageCmd = program
+  .command("usage")
+  .description("Manage the usage of tokens");
+
+usageCmd
+  .command("count <name>")
+  .description("count the number of total tokens used for this experiment")
+  .option("-c, --cost", "Show cost breakdown in USD")
+  .action(async (name, options) => {
+    //TODO : add the cost for other models (create a service ?)
+    const experiment = await ExperimentResource.findByName(name);
+    if (!experiment) {
+      return exitWithError(
+        new Err(
+          new SrchdError("not_found_error", `Experiment '${name}' not found.`),
+        ),
+      );
+    }
+
+    const usageData = await UsageResource.countToken(experiment.toJSON().id);
+
+    if (options.cost) {
+      const CLAUDE_PRICING = {
+        input: 3.0,
+        output: 15.0,
+        cache_creation: 3.75,
+        cache_read: 0.3,
+      };
+
+      const tokens = {
+        input_tokens: Number(usageData[0]?.input_tokens) || 0,
+        output_tokens: Number(usageData[0]?.output_tokens) || 0,
+        cache_creation_tokens: Number(usageData[0]?.cache_creation_tokens) || 0,
+        cache_read_tokens: Number(usageData[0]?.cache_read_tokens) || 0,
+      };
+
+      const costs = {
+        input_cost: (tokens.input_tokens / 1_000_000) * CLAUDE_PRICING.input,
+        output_cost: (tokens.output_tokens / 1_000_000) * CLAUDE_PRICING.output,
+        cache_creation_cost:
+          (tokens.cache_creation_tokens / 1_000_000) *
+          CLAUDE_PRICING.cache_creation,
+        cache_read_cost:
+          (tokens.cache_read_tokens / 1_000_000) * CLAUDE_PRICING.cache_read,
+      };
+
+      const total_cost =
+        costs.input_cost +
+        costs.output_cost +
+        costs.cache_creation_cost +
+        costs.cache_read_cost;
+
+      console.table([
+        {
+          ...tokens,
+          total_cost: `$${total_cost.toFixed(4)}`,
+        },
+      ]);
+    } else {
+      console.table(usageData);
     }
   });
 

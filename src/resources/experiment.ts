@@ -40,16 +40,20 @@ export class ExperimentResource {
     return result[0] ? new ExperimentResource(result[0]) : null;
   }
 
-  static deleteById(experimentId: number) {
-    db.transaction((tx) => {
+  static async deleteById(experimentId: number) {
+    await db.transaction(async (tx) => {
       tx.delete(citations).where(eq(citations.experiment, experimentId));
-      tx.delete(reviews).where(eq(reviews.experiment, experimentId));
-      tx.delete(solutions).where(eq(solutions.experiment, experimentId));
-      tx.delete(publications).where(eq(publications.experiment, experimentId));
-      tx.delete(messages).where(eq(messages.experiment, experimentId));
-      tx.delete(evolutions).where(eq(evolutions.experiment, experimentId));
-      tx.delete(agents).where(eq(agents.experiment, experimentId));
-      tx.delete(experiments).where(eq(experiments.id, experimentId));
+      await tx.delete(reviews).where(eq(reviews.experiment, experimentId));
+      await tx.delete(solutions).where(eq(solutions.experiment, experimentId));
+      await tx
+        .delete(publications)
+        .where(eq(publications.experiment, experimentId));
+      await tx.delete(messages).where(eq(messages.experiment, experimentId));
+      await tx
+        .delete(evolutions)
+        .where(eq(evolutions.experiment, experimentId));
+      await tx.delete(agents).where(eq(agents.experiment, experimentId));
+      await tx.delete(experiments).where(eq(experiments.id, experimentId));
     });
   }
 

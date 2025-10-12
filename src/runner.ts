@@ -28,6 +28,7 @@ import { assertNever } from "./lib/assert";
 import { createGoalSolutionServer } from "./tools/goal_solution";
 import { GeminiModel, GeminiModels } from "./models/gemini";
 import { OpenAIModel, OpenAIModels } from "./models/openai";
+import { UsageResource } from "./resources/usage";
 
 const MAX_TOKENS_COUNT = 163840;
 
@@ -507,7 +508,7 @@ ${this.agent.toJSON().system}`;
 
     let last = this.messages[this.messages.length - 1];
 
-    // const usage = this.model.getUsage();
+    const usage = this.model.getUsage();
 
     const agentMessage = await MessageResource.create(
       this.experiment,
@@ -516,6 +517,14 @@ ${this.agent.toJSON().system}`;
       last.position() + 1,
     );
     this.messages.push(agentMessage);
+    if (usage) {
+      await UsageResource.create(
+        this.experiment,
+        agentMessage,
+        this.agent,
+        usage,
+      );
+    }
 
     m.value.content.forEach((c) => {
       this.logContent(c, agentMessage.toJSON().id);
