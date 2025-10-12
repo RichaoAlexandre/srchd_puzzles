@@ -62,6 +62,13 @@ experimentCmd
   });
 
 experimentCmd
+  .command("delete <experimentId>")
+  .description("delete the experiment by id")
+  .action(async (experimentId) => {
+    await ExperimentResource.deleteById(experimentId);
+  });
+
+experimentCmd
   .command("list")
   .description("List all experiments")
   .action(async () => {

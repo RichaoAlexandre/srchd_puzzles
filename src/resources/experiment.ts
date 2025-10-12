@@ -1,5 +1,14 @@
 import { db } from "../db";
-import { experiments } from "../db/schema";
+import {
+  agents,
+  citations,
+  evolutions,
+  experiments,
+  messages,
+  publications,
+  reviews,
+  solutions,
+} from "../db/schema";
 import { eq, InferSelectModel, InferInsertModel } from "drizzle-orm";
 
 type Experiment = InferSelectModel<typeof experiments>;
@@ -31,11 +40,24 @@ export class ExperimentResource {
     return result[0] ? new ExperimentResource(result[0]) : null;
   }
 
+  static deleteById(experimentId: number) {
+    db.transaction((tx) => {
+      tx.delete(citations).where(eq(citations.experiment, experimentId));
+      tx.delete(reviews).where(eq(reviews.experiment, experimentId));
+      tx.delete(solutions).where(eq(solutions.experiment, experimentId));
+      tx.delete(publications).where(eq(publications.experiment, experimentId));
+      tx.delete(messages).where(eq(messages.experiment, experimentId));
+      tx.delete(evolutions).where(eq(evolutions.experiment, experimentId));
+      tx.delete(agents).where(eq(agents.experiment, experimentId));
+      tx.delete(experiments).where(eq(experiments.id, experimentId));
+    });
+  }
+
   static async create(
     data: Omit<
       InferInsertModel<typeof experiments>,
       "id" | "created" | "updated"
-    >
+    >,
   ): Promise<ExperimentResource> {
     const [created] = await db.insert(experiments).values(data).returning();
     return new ExperimentResource(created);
@@ -47,7 +69,7 @@ export class ExperimentResource {
   }
 
   async update(
-    data: Partial<Omit<InferInsertModel<typeof experiments>, "id" | "created">>
+    data: Partial<Omit<InferInsertModel<typeof experiments>, "id" | "created">>,
   ): Promise<ExperimentResource> {
     const [updated] = await db
       .update(experiments)
