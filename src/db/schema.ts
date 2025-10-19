@@ -24,7 +24,7 @@ export const experiments = sqliteTable(
     name: text("name").notNull(),
     problem: text("problem").notNull(),
   },
-  (t) => [unique().on(t.name)],
+  (t) => [unique().on(t.name)]
 );
 
 export const agents = sqliteTable(
@@ -48,7 +48,7 @@ export const agents = sqliteTable(
       .notNull(),
     thinking: text("thinking").$type<ThinkingConfig>().notNull(),
   },
-  (t) => [unique().on(t.name, t.experiment)],
+  (t) => [unique().on(t.name, t.experiment)]
 );
 
 export const evolutions = sqliteTable(
@@ -76,10 +76,10 @@ export const evolutions = sqliteTable(
       index("evolutions_idx_experiment_agent_created").on(
         t.experiment,
         t.agent,
-        t.created,
+        t.created
       ),
     ];
-  },
+  }
 );
 
 export const messages = sqliteTable(
@@ -110,7 +110,7 @@ export const messages = sqliteTable(
       .$type<Message["content"]>()
       .notNull(),
   },
-  (t) => [unique().on(t.experiment, t.agent, t.position)],
+  (t) => [unique().on(t.experiment, t.agent, t.position)]
 );
 
 export const publications = sqliteTable(
@@ -141,7 +141,7 @@ export const publications = sqliteTable(
   },
   (t) => {
     return [unique().on(t.experiment, t.reference)];
-  },
+  }
 );
 
 export const citations = sqliteTable(
@@ -167,7 +167,7 @@ export const citations = sqliteTable(
       .notNull()
       .references(() => publications.id),
   },
-  (t) => [unique().on(t.from, t.to, t.experiment)],
+  (t) => [unique().on(t.from, t.to, t.experiment)]
 );
 
 export const reviews = sqliteTable(
@@ -197,7 +197,7 @@ export const reviews = sqliteTable(
     }),
     content: text("content"),
   },
-  (t) => [unique().on(t.author, t.publication)],
+  (t) => [unique().on(t.author, t.publication)]
 );
 
 export const solutions = sqliteTable(
@@ -234,9 +234,9 @@ export const solutions = sqliteTable(
     index("solutions_idx_experiment_agent_created").on(
       t.experiment,
       t.agent,
-      t.created,
+      t.created
     ),
-  ],
+  ]
 );
 
 export const usages = sqliteTable("usages", {
@@ -261,3 +261,27 @@ export const usages = sqliteTable("usages", {
   cache_creation_tokens: integer("cache_creation_tokens").notNull().default(0),
   cache_read_tokens: integer("cache_read_tokens").notNull().default(0),
 });
+
+export const scripts = sqliteTable(
+  "scripts",
+  {
+    id: integer("id").primaryKey(),
+    created: integer("created", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    edited: integer("edited", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    author: text("author").notNull(),
+    name: text("name").notNull(),
+    path: text("path").notNull(),
+    code: text("code").notNull(),
+    publication: integer("publications")
+      .notNull()
+      .references(() => publications.id),
+    experiment: integer("experiment")
+      .notNull()
+      .references(() => experiments.id),
+  },
+  (t) => [unique().on(t.name, t.author)]
+);

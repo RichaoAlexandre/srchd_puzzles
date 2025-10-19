@@ -14,7 +14,8 @@ export type ErrorCode =
   | "tool_not_found_error"
   | "computer_run_error"
   | "computer_timeout_error"
-  | "string_edit_error";
+  | "string_edit_error"
+  | "script_execution_error";
 
 export class SrchdError<T extends ErrorCode = ErrorCode> extends Error {
   constructor(

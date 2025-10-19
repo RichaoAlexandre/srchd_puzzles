@@ -216,17 +216,17 @@ const baseTemplate = (title: string, content: string, breadcrumb?: string) => `
 const experimentNav = (experimentId: number, current: string) => `
   <div class="nav">
     <a href="/experiments/${experimentId}"${
-  current === "overview" ? ' style="font-weight: bold;"' : ""
-}>Overview</a>
+      current === "overview" ? ' style="font-weight: bold;"' : ""
+    }>Overview</a>
     <a href="/experiments/${experimentId}/agents"${
-  current === "agents" ? ' style="font-weight: bold;"' : ""
-}>Agents</a>
+      current === "agents" ? ' style="font-weight: bold;"' : ""
+    }>Agents</a>
     <a href="/experiments/${experimentId}/publications"${
-  current === "publications" ? ' style="font-weight: bold;"' : ""
-}>Publications</a>
+      current === "publications" ? ' style="font-weight: bold;"' : ""
+    }>Publications</a>
     <a href="/experiments/${experimentId}/solutions"${
-  current === "solutions" ? ' style="font-weight: bold;"' : ""
-}>Solutions</a>
+      current === "solutions" ? ' style="font-weight: bold;"' : ""
+    }>Solutions</a>
   </div>
 `;
 
@@ -260,7 +260,7 @@ const prepareChartData = (solutions: any[]) => {
 
   // Get all unique timestamps and sort them
   const allTimestamps = solutions.map((sol) =>
-    new Date(sol.toJSON().created).getTime()
+    new Date(sol.toJSON().created).getTime(),
   );
   const uniqueTimestamps = [...new Set(allTimestamps)].sort();
   const timePoints = uniqueTimestamps.map((ts) => new Date(ts));
@@ -279,7 +279,7 @@ const prepareChartData = (solutions: any[]) => {
     .map((sol) => sol.toJSON())
     .sort(
       (a: any, b: any) =>
-        new Date(a.created).getTime() - new Date(b.created).getTime()
+        new Date(a.created).getTime() - new Date(b.created).getTime(),
     );
 
   // Track current solution support for each publication over time
@@ -355,7 +355,7 @@ const prepareChartData = (solutions: any[]) => {
       // Sort points by time
       line.points.sort(
         (a: any, b: any) =>
-          new Date(a.time).getTime() - new Date(b.time).getTime()
+          new Date(a.time).getTime() - new Date(b.time).getTime(),
       );
       return line;
     });
@@ -369,7 +369,7 @@ const prepareChartData = (solutions: any[]) => {
 // Home page - List all experiments
 app.get("/", async (c) => {
   const experiments = (await ExperimentResource.all()).sort(
-    (a, b) => b.toJSON().created.getTime() - a.toJSON().created.getTime()
+    (a, b) => b.toJSON().created.getTime() - a.toJSON().created.getTime(),
   );
 
   const content = `
@@ -401,12 +401,10 @@ app.get("/experiments/:id", async (c) => {
   if (!experiment) return c.notFound();
 
   const experimentAgents = await AgentResource.listByExperiment(experiment);
-  const experimentPublications = await PublicationResource.listByExperiment(
-    experiment
-  );
-  const experimentSolutions = await SolutionResource.listByExperiment(
-    experiment
-  );
+  const experimentPublications =
+    await PublicationResource.listByExperiment(experiment);
+  const experimentSolutions =
+    await SolutionResource.listByExperiment(experiment);
 
   const expData = experiment.toJSON();
 
@@ -449,13 +447,13 @@ app.get("/experiments/:id/agents", async (c) => {
         return `
         <div class="card">
           <h3><a href="/experiments/${id}/agents/${agentData.id}">${
-          agentData.name
-        }</a></h3>
+            agentData.name
+          }</a></h3>
           <div class="meta">
             Provider: ${agentData.provider} | Model: ${agentData.model} |
             Thikning: ${agentData.thinking} | Evolutions: ${
-          agentData.evolutions.length
-        } |
+              agentData.evolutions.length
+            } |
             Created: ${agentData.created.toLocaleString()}
           </div>
         </div>
@@ -482,7 +480,7 @@ app.get("/experiments/:id/agents/:agentId", async (c) => {
 
   const agentPublications = await PublicationResource.listByAuthor(
     experiment,
-    agent
+    agent,
   );
   const agentSolutions = await SolutionResource.listByAgent(experiment, agent);
 
@@ -609,13 +607,13 @@ app.get("/experiments/:id/agents/:agentId", async (c) => {
         return `
         <div class="card">
           <h3><a href="/experiments/${id}/publications/${pubData.id}">${
-          pubData.title
-        }</a></h3>
+            pubData.title
+          }</a></h3>
           <div class="abstract">${pubData.abstract}</div>
           <div class="meta">
             <span class="status ${pubData.status.toLowerCase()}">${
-          pubData.status
-        }</span> |
+              pubData.status
+            }</span> |
             Reference: ${pubData.reference}
           </div>
         </div>
@@ -652,9 +650,8 @@ app.get("/experiments/:id/publications", async (c) => {
   const experiment = await ExperimentResource.findById(id);
   if (!experiment) return c.notFound();
 
-  const experimentPublications = await PublicationResource.listByExperiment(
-    experiment
-  );
+  const experimentPublications =
+    await PublicationResource.listByExperiment(experiment);
   const expData = experiment.toJSON();
 
   const content = `
@@ -665,14 +662,14 @@ app.get("/experiments/:id/publications", async (c) => {
         return `
         <div class="card">
           <h3><a href="/experiments/${id}/publications/${pubData.id}">${
-          pubData.title
-        }</a></h3>
+            pubData.title
+          }</a></h3>
           <div class="abstract">${pubData.abstract}</div>
           <div class="meta">
             Author: ${pubData.author.name} |
             <span class="status ${pubData.status.toLowerCase()}">${
-          pubData.status
-        }</span> |
+              pubData.status
+            }</span> |
             Reference: ${pubData.reference} |
             Created: ${pubData.created.toLocaleString()} |
             Citations: ${pubData.citations.to.length} |
@@ -683,7 +680,7 @@ app.get("/experiments/:id/publications", async (c) => {
                   (r) =>
                     `<span class="grade ${r.grade?.toLowerCase()}">${
                       r.grade
-                    }</span>`
+                    }</span>`,
                 )
                 .join("") || "No reviews yet"
             }
@@ -719,8 +716,8 @@ app.get("/experiments/:id/publications/:pubId", async (c) => {
     <div class="card">
       <p><strong>Author:</strong> ${pubData.author.name}</p>
       <p><strong>Status:</strong> <span class="status ${pubData.status.toLowerCase()}">${
-    pubData.status
-  }</span></p>
+        pubData.status
+      }</span></p>
       <p><strong>Reference:</strong> ${pubData.reference}</p>
       <div class="abstract"><strong>Abstract:</strong> ${pubData.abstract}</div>
       <div class="meta">Created: ${pubData.created.toLocaleString()}</div>
@@ -740,7 +737,7 @@ app.get("/experiments/:id/publications/:pubId", async (c) => {
           .map(
             (cit) => `
           <div class="citation">→ <a href="/experiments/${id}/publications/${cit.to}">${cit.to}</a></div>
-        `
+        `,
           )
           .join("")}
       </div>
@@ -758,7 +755,7 @@ app.get("/experiments/:id/publications/:pubId", async (c) => {
           .map(
             (cit) => `
           <div class="citation">← <a href="/experiments/${id}/publications/${cit.from}">${cit.from}</a></div>
-        `
+        `,
           )
           .join("")}
       </div>
@@ -778,7 +775,7 @@ app.get("/experiments/:id/publications/:pubId", async (c) => {
             review.grade
               ? `<span class="grade ${review.grade.toLowerCase()}">${review.grade.replace(
                   "_",
-                  " "
+                  " ",
                 )}</span>`
               : ""
           }
@@ -797,7 +794,7 @@ app.get("/experiments/:id/publications/:pubId", async (c) => {
         `
             : ""
         }
-      `
+      `,
         )
         .join("")}
     `
@@ -816,9 +813,8 @@ app.get("/experiments/:id/solutions", async (c) => {
   const experiment = await ExperimentResource.findById(id);
   if (!experiment) return c.notFound();
 
-  const experimentSolutions = await SolutionResource.listByExperiment(
-    experiment
-  );
+  const experimentSolutions =
+    await SolutionResource.listByExperiment(experiment);
   const experimentAgents = await AgentResource.listByExperiment(experiment);
   const expData = experiment.toJSON();
 
@@ -844,7 +840,7 @@ app.get("/experiments/:id/solutions", async (c) => {
               <div class="legend-color" style="background-color: ${line.color};"></div>
               <span>${line.reference} (current: ${line.currentSupport})</span>
             </div>
-          `
+          `,
             )
             .join("")}
         </div>

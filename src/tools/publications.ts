@@ -9,6 +9,7 @@ import {
 } from "../resources/publication";
 import { ExperimentResource } from "../resources/experiment";
 import { SrchdError } from "../lib/error";
+import { ScriptResource } from "../resources/script";
 
 const SERVER_NAME = "publications";
 const SERVER_VERSION = "0.1.0";
@@ -158,6 +159,11 @@ Defaults to \`latest\`.`
         );
       }
 
+      const scripts = await ScriptResource.listByPublication(
+        experiment,
+        publication
+      );
+
       return {
         isError: false,
         content: [
@@ -179,7 +185,20 @@ ${reviewHeader(r)}
 ${r.content}`;
   })
   .join("\n\n")}`
-                : "(reviews are hidden until publication/rejection)"),
+                : "(reviews are hidden until publication/rejection)") +
+              "\n\n" +
+              "Scripts used:" +
+              "\n\n" +
+              scripts
+                .map((script) => {
+                  const { name, code } = script.toJSON();
+                  return `\
+${name}:
+
+${code}
+`;
+                })
+                .join("\n"),
           },
         ],
       };
