@@ -41,27 +41,25 @@ export class ScriptResource {
     return await new ScriptResource(result, experiment).finalize();
   }
 
-  static async listByPublication(
+  static async getScriptbyPublication(
     experiment: ExperimentResource,
     publication: PublicationResource
-  ): Promise<ScriptResource[]> {
-    const results = await db
+  ): Promise<ScriptResource | null> {
+    const scriptId = publication.toJSON().script;
+    if (!scriptId) {
+      return null;
+    }
+    const [result] = await db
       .select()
       .from(scripts)
       .where(
         and(
           eq(scripts.experiment, experiment.toJSON().id),
-          eq(scripts.publication, publication.toJSON().id)
+          eq(scripts.id, scriptId)
         )
       );
 
-    return await concurrentExecutor(
-      results,
-      async (data) => {
-        return await new ScriptResource(data, experiment).finalize();
-      },
-      { concurrency: 8 }
-    );
+    return await new ScriptResource(result, experiment).finalize();
   }
 
   static async listByExperiment(
@@ -87,8 +85,7 @@ export class ScriptResource {
     data: Omit<
       InferInsertModel<typeof scripts>,
       "id" | "created" | "edited" | "experiment"
-    >,
-    code: string
+    >
   ): Promise<Result<ScriptResource, SrchdError>> {
     try {
       const experimentName = experiment.toJSON().name;
@@ -98,7 +95,7 @@ export class ScriptResource {
       await mkdir(experimentDir, { recursive: true });
 
       const scriptPath = join(experimentDir, data.path);
-      await writeFile(scriptPath, code, "utf-8");
+      await writeFile(scriptPath, data.code, "utf-8");
 
       const [created] = await db
         .insert(scripts)

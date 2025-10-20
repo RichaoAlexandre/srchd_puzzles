@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { citations, publications, reviews } from "../db/schema";
+import { citations, publications, reviews, scripts } from "../db/schema";
 import {
   eq,
   InferSelectModel,
@@ -311,6 +311,7 @@ export class PublicationResource {
       title: string;
       abstract: string;
       content: string;
+      scriptId?: number;
     }
   ): Promise<Result<PublicationResource, SrchdError>> {
     const references = PublicationResource.extractReferences(data.content);
@@ -332,6 +333,17 @@ export class PublicationResource {
       );
     }
 
+    let scriptId = undefined;
+    if (data.scriptId) {
+      const [scriptData] = await db
+        .select({ id: scripts.id })
+        .from(scripts)
+        .where(eq(scripts.id, data?.scriptId));
+      if (scriptData) {
+        scriptId = scriptData.id;
+      }
+    }
+
     const [created] = await db
       .insert(publications)
       .values({
@@ -340,6 +352,7 @@ export class PublicationResource {
         ...data,
         reference: newID4(),
         status: "SUBMITTED",
+        script: scriptId ?? undefined,
       })
       .returning();
 

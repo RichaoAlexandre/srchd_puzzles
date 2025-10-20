@@ -30,22 +30,9 @@ export function createScriptsServer(
         .describe(
           "Name of the script (will be sanitized to valid Python filename)."
         ),
-      publication: z
-        .number()
-        .describe("ID of the publication this script is related to."),
       code: z.string().describe("Python code to execute."),
     },
-    async ({ name, publication: publicationId, code }) => {
-      const publication = await PublicationResource.findById(
-        experiment,
-        publicationId
-      );
-      if (!publication) {
-        return errorToCallToolResult(
-          new SrchdError("not_found_error", "Publication not found")
-        );
-      }
-
+    async ({ name, code }) => {
       const sanitizedName = name
         .toLowerCase()
         .replace(/[^a-z0-9_]/g, "_")
@@ -54,16 +41,12 @@ export function createScriptsServer(
         ? sanitizedName
         : `${sanitizedName}.py`;
 
-      const scriptResult = await ScriptResource.create(
-        experiment,
-        {
-          author: agent.toJSON().name,
-          name,
-          path: fileName,
-          publication: publicationId,
-        },
-        code
-      );
+      const scriptResult = await ScriptResource.create(experiment, {
+        author: agent.toJSON().name,
+        name,
+        path: fileName,
+        code,
+      });
 
       if (scriptResult.isErr()) {
         return errorToCallToolResult(scriptResult.error);

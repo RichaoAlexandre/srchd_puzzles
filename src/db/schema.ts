@@ -138,6 +138,7 @@ export const publications = sqliteTable(
       enum: ["SUBMITTED", "PUBLISHED", "REJECTED"],
     }).notNull(),
     reference: text("reference").notNull(),
+    script: integer("script").references(() => scripts.id),
   },
   (t) => {
     return [unique().on(t.experiment, t.reference)];
@@ -276,9 +277,6 @@ export const scripts = sqliteTable(
     name: text("name").notNull(),
     path: text("path").notNull(),
     code: text("code").notNull(),
-    publication: integer("publications")
-      .notNull()
-      .references(() => publications.id),
     experiment: integer("experiment")
       .notNull()
       .references(() => experiments.id),

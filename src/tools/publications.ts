@@ -159,7 +159,7 @@ Defaults to \`latest\`.`
         );
       }
 
-      const scripts = await ScriptResource.listByPublication(
+      const script = await ScriptResource.getScriptbyPublication(
         experiment,
         publication
       );
@@ -187,18 +187,13 @@ ${r.content}`;
   .join("\n\n")}`
                 : "(reviews are hidden until publication/rejection)") +
               "\n\n" +
-              "Scripts used:" +
-              "\n\n" +
-              scripts
-                .map((script) => {
-                  const { name, code } = script.toJSON();
-                  return `\
-${name}:
+              (script
+                ? `Scripts used:
 
-${code}
-`;
-                })
-                .join("\n"),
+${script.toJSON().name}:
+
+${script.toJSON().code}`
+                : "No script used."),
           },
         ],
       };
@@ -218,8 +213,12 @@ ${code}
         .describe(
           "Full content of the publication. Use [{ref}] or [{ref},{ref}] inlined in content for citations."
         ),
+      scriptId: z
+        .number()
+        .optional()
+        .describe("The id of the script that was used for this publication"),
     },
-    async ({ title, abstract, content }) => {
+    async ({ title, abstract, content, scriptId }) => {
       const pendingReviews =
         await PublicationResource.listByExperimentAndReviewRequested(
           experiment,
@@ -249,6 +248,7 @@ ${code}
         title,
         abstract,
         content,
+        scriptId,
       });
       if (publication.isErr()) {
         return errorToCallToolResult(publication.error);
