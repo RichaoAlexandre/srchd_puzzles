@@ -29,6 +29,7 @@ import { createGoalSolutionServer } from "./tools/goal_solution";
 import { GeminiModel, GeminiModels } from "./models/gemini";
 import { OpenAIModel, OpenAIModels } from "./models/openai";
 import { UsageResource } from "./resources/usage";
+import { createScriptsServer } from "./tools/scripts";
 
 const MAX_TOKENS_COUNT = 163840;
 
@@ -44,7 +45,7 @@ export class Runner {
     experiment: ExperimentResource,
     agent: AgentResource,
     mcpClients: Client[],
-    model: BaseModel,
+    model: BaseModel
   ) {
     this.experiment = experiment;
     this.agent = agent;
@@ -56,7 +57,7 @@ export class Runner {
 
   public static async builder(
     experimentName: string,
-    agentName: string,
+    agentName: string
   ): Promise<
     Result<
       { experiment: ExperimentResource; agent: AgentResource; runner: Runner },
@@ -68,8 +69,8 @@ export class Runner {
       return new Err(
         new SrchdError(
           "not_found_error",
-          `Experiment '${experimentName}' not found.`,
-        ),
+          `Experiment '${experimentName}' not found.`
+        )
       );
     }
 
@@ -78,19 +79,22 @@ export class Runner {
       return new Err(
         new SrchdError(
           "not_found_error",
-          `Agent '${agentName}' not found in experiment '${experimentName}'.`,
-        ),
+          `Agent '${agentName}' not found in experiment '${experimentName}'.`
+        )
       );
     }
 
     const [publicationClient] = await createClientServerPair(
-      createPublicationsServer(experiment, agent),
+      createPublicationsServer(experiment, agent)
     );
     const [systemPromptSelfEditClient] = await createClientServerPair(
-      createSystemPromptSelfEditServer(agent),
+      createSystemPromptSelfEditServer(agent)
     );
     const [goalSolutionClient] = await createClientServerPair(
-      createGoalSolutionServer(experiment, agent),
+      createGoalSolutionServer(experiment, agent)
+    );
+    const [scriptServer] = await createClientServerPair(
+      createScriptsServer(experiment, agent)
     );
 
     const model = (() => {
@@ -101,21 +105,21 @@ export class Runner {
             {
               thinking: agent.toJSON().thinking,
             },
-            agent.toJSON().model as AnthropicModels,
+            agent.toJSON().model as AnthropicModels
           );
         case "gemini":
           return new GeminiModel(
             {
               thinking: agent.toJSON().thinking,
             },
-            agent.toJSON().model as GeminiModels,
+            agent.toJSON().model as GeminiModels
           );
         case "openai":
           return new OpenAIModel(
             {
               thinking: agent.toJSON().thinking,
             },
-            agent.toJSON().model as OpenAIModels,
+            agent.toJSON().model as OpenAIModels
           );
         default:
           assertNever(provider);
@@ -125,8 +129,13 @@ export class Runner {
     const runner = await Runner.initialize(
       experiment,
       agent,
-      [publicationClient, systemPromptSelfEditClient, goalSolutionClient],
-      model,
+      [
+        publicationClient,
+        systemPromptSelfEditClient,
+        goalSolutionClient,
+        scriptServer,
+      ],
+      model
     );
     if (runner.isErr()) {
       return runner;
@@ -143,13 +152,13 @@ export class Runner {
     experiment: ExperimentResource,
     agent: AgentResource,
     mcpClients: Client[],
-    model: BaseModel,
+    model: BaseModel
   ): Promise<Result<Runner, SrchdError>> {
     const runner = new Runner(experiment, agent, mcpClients, model);
 
     const messages = await MessageResource.listMessagesByAgent(
       runner.experiment,
-      runner.agent,
+      runner.agent
     );
 
     runner.messages = messages;
@@ -177,8 +186,8 @@ export class Runner {
             `Error listing tools from client ${
               client.getServerVersion()?.name
             }`,
-            normalizeError(error),
-          ),
+            normalizeError(error)
+          )
         );
       }
     }
@@ -226,8 +235,8 @@ export class Runner {
             new SrchdError(
               "tool_execution_error",
               `Error executing tool ${t.name}`,
-              normalizeError(error),
-            ),
+              normalizeError(error)
+            )
           ).content,
           isError: true,
         };
@@ -242,8 +251,8 @@ export class Runner {
         new SrchdError(
           "tool_execution_error",
           `No MCP client found to execute tool ${t.name}`,
-          null,
-        ),
+          null
+        )
       ).content,
       isError: true,
     };
@@ -272,12 +281,12 @@ export class Runner {
     const reviews =
       await PublicationResource.listByExperimentAndReviewRequested(
         this.experiment,
-        this.agent,
+        this.agent
       );
 
     const publications = await PublicationResource.listByAuthor(
       this.experiment,
-      this.agent,
+      this.agent
     );
 
     const m: Message = {
@@ -307,7 +316,7 @@ This is an automated system message. There is no user available to respond. Proc
       this.experiment,
       this.agent,
       m,
-      position,
+      position
     );
 
     return new Ok(message);
@@ -316,7 +325,7 @@ This is an automated system message. There is no user available to respond. Proc
   shiftLastAgenticLoopStartPosition(): Result<void, SrchdError> {
     assert(
       this.lastAgenticLoopStartPosition < this.messages.length,
-      "lastAgenticLoopStartPosition is out of bounds.",
+      "lastAgenticLoopStartPosition is out of bounds."
     );
 
     // console.log(
@@ -338,8 +347,8 @@ This is an automated system message. There is no user available to respond. Proc
       return new Err(
         new SrchdError(
           "agent_loop_overflow_error",
-          "No agentic loop start position found after last.",
-        ),
+          "No agentic loop start position found after last."
+        )
       );
     }
 
@@ -356,7 +365,7 @@ This is an automated system message. There is no user available to respond. Proc
    */
   async renderForModel(
     systemPrompt: string,
-    tools: Tool[],
+    tools: Tool[]
   ): Promise<Result<Message[], SrchdError>> {
     let tokenCount = 0;
     do {
@@ -369,11 +378,11 @@ This is an automated system message. There is no user available to respond. Proc
         messages,
         systemPrompt,
         "auto",
-        tools,
+        tools
       );
       if (res.isErr()) {
         console.log(
-          "Agent: " + this.agent.toJSON().name + " " + this.agent.toJSON().id,
+          "Agent: " + this.agent.toJSON().name + " " + this.agent.toJSON().id
         );
         console.log(messages.length);
         messages.forEach((m) => {
@@ -404,7 +413,7 @@ This is an automated system message. There is no user available to respond. Proc
    */
   logContent(
     c: TextContent | ToolUse | ToolResult | Thinking,
-    messageId?: number,
+    messageId?: number
   ) {
     let out = `\x1b[1m\x1b[37m${this.agent.toJSON().name}\x1b[0m`; // name: bold white
     if (messageId) {
@@ -473,7 +482,7 @@ ${this.agent.toJSON().system}`;
 
     const messagesForModel = await this.renderForModel(
       systemPrompt,
-      tools.value,
+      tools.value
     );
     if (messagesForModel.isErr()) {
       return messagesForModel;
@@ -483,7 +492,7 @@ ${this.agent.toJSON().system}`;
       messagesForModel.value,
       systemPrompt,
       "auto",
-      tools.value,
+      tools.value
     );
     if (m.isErr()) {
       return m;
@@ -493,7 +502,7 @@ ${this.agent.toJSON().system}`;
       console.log(
         `WARNING: Skipping empty agent response content for agent ${
           this.agent.toJSON().name
-        }`,
+        }`
       );
       return new Ok(undefined);
     }
@@ -503,7 +512,7 @@ ${this.agent.toJSON().system}`;
       async (t: ToolUse) => {
         return await this.executeTool(t);
       },
-      { concurrency: 8 },
+      { concurrency: 8 }
     );
 
     let last = this.messages[this.messages.length - 1];
@@ -514,7 +523,7 @@ ${this.agent.toJSON().system}`;
       this.experiment,
       this.agent,
       m.value,
-      last.position() + 1,
+      last.position() + 1
     );
     this.messages.push(agentMessage);
     if (usage) {
@@ -522,7 +531,7 @@ ${this.agent.toJSON().system}`;
         this.experiment,
         agentMessage,
         this.agent,
-        usage,
+        usage
       );
     }
 
@@ -538,7 +547,7 @@ ${this.agent.toJSON().system}`;
           role: "user",
           content: toolResults,
         },
-        last.position() + 2,
+        last.position() + 2
       );
       this.messages.push(toolResultsMessage);
 
@@ -559,20 +568,20 @@ ${this.agent.toJSON().system}`;
    * @param messageId ID of the agent message to replay.
    */
   async replayAgentMessage(
-    messageId: number,
+    messageId: number
   ): Promise<Result<void, SrchdError>> {
     const agentMessage = await MessageResource.findById(
       this.experiment,
       this.agent,
-      messageId,
+      messageId
     );
 
     if (!agentMessage || agentMessage.toJSON().role !== "agent") {
       return new Err(
         new SrchdError(
           "not_found_error",
-          `Agent message not found for id ${messageId}`,
-        ),
+          `Agent message not found for id ${messageId}`
+        )
       );
     }
 
@@ -592,7 +601,7 @@ ${this.agent.toJSON().system}`;
         }
         return res;
       },
-      { concurrency: 8 },
+      { concurrency: 8 }
     );
 
     console.log(JSON.stringify(toolResults, null, 2));

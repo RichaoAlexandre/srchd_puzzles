@@ -4,8 +4,6 @@ import { AgentResource } from "../resources/agent";
 import { errorToCallToolResult } from "../lib/mcp";
 import { ScriptResource } from "../resources/script";
 import { ExperimentResource } from "../resources/experiment";
-import { SrchdError } from "../lib/error";
-import { PublicationResource } from "../resources/publication";
 
 const SERVER_NAME = "scripts";
 const SERVER_VERSION = "0.1.0";
@@ -23,12 +21,12 @@ export function createScriptsServer(
 
   server.tool(
     "create_and_run_script",
-    "Create a Python script and execute it immediately. The script will be saved and executed.",
+    "Run calculations in python with the help of numpy, pandas, matplotlib. Do not use other libraries",
     {
       name: z
         .string()
         .describe(
-          "Name of the script (will be sanitized to valid Python filename)."
+          "Name of the script (will be sanitized to valid Python filename). Should be descriptive of the calculation being performed."
         ),
       code: z.string().describe("Python code to execute."),
     },
@@ -43,8 +41,7 @@ export function createScriptsServer(
 
       const scriptResult = await ScriptResource.create(experiment, {
         author: agent.toJSON().name,
-        name,
-        path: fileName,
+        name: fileName,
         code,
       });
 
@@ -54,7 +51,7 @@ export function createScriptsServer(
 
       const script = scriptResult.value;
 
-      const runResult = await script.runPython(script.toJSON().id);
+      const runResult = await script.runPython(script, agent);
 
       if (runResult.isErr()) {
         return errorToCallToolResult(runResult.error);
@@ -65,7 +62,11 @@ export function createScriptsServer(
         content: [
           {
             type: "text",
-            text: `Script created and executed successfully.\n\nOutput:\n${runResult.value}`,
+            text: `Script with id ${
+              script.toJSON().id
+            } created and executed successfully.\n\nOutput:\n${
+              runResult.value
+            }`,
           },
         ],
       };

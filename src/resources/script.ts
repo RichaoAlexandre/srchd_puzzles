@@ -5,11 +5,11 @@ import { ExperimentResource } from "./experiment";
 import { Err, Ok, Result } from "../lib/result";
 import { normalizeError, SrchdError } from "../lib/error";
 import { concurrentExecutor } from "../lib/async";
-import { spawn } from "child_process";
-import { mkdir, access, writeFile } from "fs/promises";
-import { constants } from "fs";
+import { mkdir, writeFile, readFile } from "fs/promises";
 import { join } from "path";
 import { PublicationResource } from "./publication";
+import { Computer } from "../computer";
+import { AgentResource } from "./agent";
 
 export type Script = InferSelectModel<typeof scripts>;
 
@@ -89,20 +89,12 @@ export class ScriptResource {
   ): Promise<Result<ScriptResource, SrchdError>> {
     try {
       const experimentName = experiment.toJSON().name;
-      const scriptsDir = join(process.cwd(), "scripts");
-      const experimentDir = join(scriptsDir, experimentName);
-
-      await mkdir(experimentDir, { recursive: true });
-
-      const scriptPath = join(experimentDir, data.path);
-      await writeFile(scriptPath, data.code, "utf-8");
 
       const [created] = await db
         .insert(scripts)
         .values({
           ...data,
           experiment: experiment.toJSON().id,
-          path: scriptPath,
         })
         .returning();
 
@@ -118,65 +110,61 @@ export class ScriptResource {
     }
   }
 
-  async runPython(id: number): Promise<Result<string, SrchdError>> {
+  async runPython(
+    script: ScriptResource,
+    agent: AgentResource
+  ): Promise<Result<string, SrchdError>> {
     try {
-      const [script] = await db
-        .select({ path: scripts.path })
-        .from(scripts)
-        .where(eq(scripts.id, id));
+      if (!script) {
+        return new Err(
+          new SrchdError("reading_file_error", "No script provided !")
+        );
+      }
 
-      try {
-        await access(script.path, constants.F_OK);
-      } catch {
+      const computerResult = await Computer.ensure(agent.toJSON().name);
+      if (!computerResult.isOk()) {
+        return new Err(computerResult.error);
+      }
+      const computer = computerResult.value;
+
+      const scriptPath = `/home/agent/${script.toJSON().name}`;
+      const writeResult = await computer.writeFile(
+        scriptPath,
+        Buffer.from(script.toJSON().code, "utf-8"),
+        0o755 // Make executable
+      );
+
+      if (!writeResult.isOk()) {
         return new Err(
           new SrchdError(
-            "reading_file_error",
-            `Script file not found at ${script.path}`
+            "script_execution_error",
+            "Failed to write script to container",
+            writeResult.error
           )
         );
       }
 
-      return new Promise((resolve) => {
-        const process = spawn("python3", [script.path]);
-        let stdout = "";
-        let stderr = "";
-
-        process.stdout.on("data", (data) => {
-          stdout += data.toString();
-        });
-
-        process.stderr.on("data", (data) => {
-          stderr += data.toString();
-        });
-
-        process.on("close", (code) => {
-          if (code !== 0) {
-            resolve(
-              new Err(
-                new SrchdError(
-                  "script_execution_error",
-                  `Script exited with code ${code}`,
-                  new Error(stderr)
-                )
-              )
-            );
-          } else {
-            resolve(new Ok(stdout));
-          }
-        });
-
-        process.on("error", (error) => {
-          resolve(
-            new Err(
-              new SrchdError(
-                "script_execution_error",
-                "Failed to execute script",
-                normalizeError(error)
-              )
-            )
-          );
-        });
+      const execResult = await computer.execute(`python3 ${scriptPath}`, {
+        timeoutMs: 60000,
       });
+
+      if (!execResult.isOk()) {
+        return new Err(execResult.error);
+      }
+
+      const { exitCode, stdout, stderr } = execResult.value;
+
+      if (exitCode !== 0) {
+        return new Err(
+          new SrchdError(
+            "script_execution_error",
+            `Script exited with code ${exitCode}`,
+            new Error(stderr || "No error output")
+          )
+        );
+      }
+
+      return new Ok(stdout);
     } catch (error) {
       return new Err(
         new SrchdError(

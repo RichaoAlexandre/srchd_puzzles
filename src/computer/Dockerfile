@@ -51,11 +51,11 @@ RUN python3 -m venv /home/agent/.venv && \
     ipython jupyter black flake8 pytest
 
 # Configure shell environment
-RUN echo 'export PATH="/home/agent/.venv/bin:$PATH"' >> /home/agent/.bashrc && \
-    echo 'export PYTHONPATH="/home/agent:$PYTHONPATH"' >> /home/agent/.bashrc && \
-    echo 'alias ll="ls -la"' >> /home/agent/.bashrc && \
-    echo 'alias la="ls -la"' >> /home/agent/.bashrc && \
-    echo 'cd /home/agent' >> /home/agent/.bashrc
+RUN echo 'export PATH="/home/agent/.venv/bin:$PATH"' >> /home/agent/.profile && \
+    echo 'export PYTHONPATH="/home/agent:$PYTHONPATH"' >> /home/agent/.profile && \
+    echo 'alias ll="ls -la"' >> /home/agent/.profile && \
+    echo 'alias la="ls -la"' >> /home/agent/.profile && \
+    echo 'cd /home/agent' >> /home/agent/.profile
 
 # Default command
 CMD ["/bin/bash"]

@@ -501,35 +501,56 @@ export class Computer {
 //   }
 // });
 
-(async () => {
-  const c = await Computer.ensure("test");
-  if (c.isOk()) {
-    // await c.value.terminate();
+// (async () => {
+//   const c = await Computer.ensure("test");
+//   // console.log(`c is ${JSON.stringify(c)}`);
+//   if (c.isOk()) {
+//     // console.log("writing file");
+//     // console.log(
+//     //   await c.value.writeFile(
+//     //     "/home/agent/test3/hello.md",
+//     //     Buffer.from("hello world\n")
+//     //   )
+//     // );
 
-    // console.log("writing file");
-    // console.log(
-    //   await c.value.writeFile(
-    //     "/home/agent/test3/hello.md",
-    //     Buffer.from("hello world\n")
-    //   )
-    // );
+//     // console.log("reading file");
+//     // const b = await c.value.readFile("/home/agent/test3/hello.md");
+//     // console.log(b);
+//     // if (b.isOk()) {
+//     //   const decoded = b.value.toString("utf8");
+//     //   console.log("READ: " + decoded);
+//     // }
 
-    // console.log("reading file");
-    // const b = await c.value.readFile("/home/agent/test3/hello.md");
-    // console.log(b);
-    // if (b.isOk()) {
-    //   const decoded = b.value.toString("utf8");
-    //   console.log("READ: " + decoded);
-    // }
+//     console.log("executing command");
+//     const e = await c.value.execute("pwd", {
+//       timeoutMs: 2000,
+//     });
+//     console.log(e);
+//   } else {
+//     console.log(c.error);
+//   }
 
-    console.log("executing command");
-    const e = await c.value.execute("ls -la", {
-      timeoutMs: 2000,
-    });
-    console.log(e);
-  } else {
-    console.log(c.error);
-  }
+//   console.log(await Computer.listComputerIds());
+// })();
 
-  console.log(await Computer.listComputerIds());
-})();
+// (async () => {
+//   const computerResult = await Computer.ensure("test");
+//   if (computerResult.isOk()) {
+//     const computer = computerResult.value;
+
+//     // Write a file
+//     await computer.writeFile(
+//       "/home/agent/script.py",
+//       Buffer.from("print('Hello from Docker!')"),
+//       0o755
+//     );
+
+//     // Execute it
+//     const result = await computer.execute("python3 /home/agent/script.py");
+//     if (result.isOk()) {
+//       console.log(result.value.stdout);
+//     } else {
+//       console.error("an error happened ");
+//     }
+//   }
+// })();

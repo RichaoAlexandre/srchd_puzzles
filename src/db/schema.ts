@@ -275,7 +275,6 @@ export const scripts = sqliteTable(
       .$defaultFn(() => new Date()),
     author: text("author").notNull(),
     name: text("name").notNull(),
-    path: text("path").notNull(),
     code: text("code").notNull(),
     experiment: integer("experiment")
       .notNull()

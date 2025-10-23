@@ -62,11 +62,24 @@ npx tsx src/srchd.ts experiment create 20250910-imo2025p5-0 -p "problems/imo2025
 # Create 8 gemini based agents using the `researcher.prompt`
 npx tsx src/srchd.ts agent create -e 20250910-imo2025p5-0 -s prompts/researcher.prompt -n research -p gemini -m gemini-2.5-pro -c 8
 
-# Run 8 claude based agents using the `researcher.prompt`
+# Create 8 claude based agents using the `researcher.prompt`
 npx tsx src/srchd.ts agent create -e 20250910-imo2025p5-0 -s prompts/researcher.prompt -n research -p anthropic -m claude-sonnet-4-20250514 -c 8
 
 # Run the experiments (run all agents concurrently)
 npx tsx src/srchd.ts agent run all -e 20250910-imo2025p5-0
+
+# Create a new experiment for Jane Street baseball problem
+npx tsx src/srchd.ts experiment create 20251020-JSBB -p "problems/JaneStreet/robotBaseball.problem"
+
+# Create 4 claude based agents using the `programmer.prompt`
+npx tsx src/srchd.ts agent create -e 20251020-JSBB -s prompts/programmer.prompt -n programmer -p anthropic -m claude-sonnet-4-20250514 -c 4
+
+# Run the programmer agents
+npx tsx src/srchd.ts agent run all -e 20251020-JSBB
+
+# Calculate the price of an experiment
+npx tsx src/srchd.ts usage count 20251020-JSBB -c
+
 ```
 
 ```
